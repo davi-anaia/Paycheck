@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PayCheck · Processamento de Pagamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --white:#FAFAF8;--black:#0A0A0A;--lime:#C8F135;--lime2:#B8E020;
+  --red:#FF3B30;--amber:#FFB800;--blue:#0066FF;
+  --gray:#F0EFE8;--gray2:#E0DFD8;--gray3:#AEADA6;
+  --border:2px solid var(--black);
+  --shadow:4px 4px 0px var(--black);--shadow-lg:6px 6px 0px var(--black);
+  --font:"Space Grotesk",sans-serif;--mono:"Space Mono",monospace;--r:4px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--white);color:var(--black);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px 80px;}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;border-bottom:var(--border);margin-bottom:32px;gap:12px;flex-wrap:wrap;}
+.nav-brand{display:flex;align-items:center;gap:10px;}
+.nav-logo{width:36px;height:36px;background:var(--lime);border:var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:var(--shadow);}
+.nav-name{font-size:1.1rem;font-weight:700;font-family:var(--mono);}
+.nav-name span{background:var(--lime);padding:0 4px;}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.nav-pill{background:var(--gray);border:var(--border);border-radius:var(--r);padding:4px 10px;font-family:var(--mono);font-size:.68rem;font-weight:700;}
+.nav-live{background:var(--lime);border:var(--border);border-radius:var(--r);padding:4px 12px;font-size:.72rem;font-weight:700;display:flex;align-items:center;gap:6px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--black);animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* HERO */
+.hero{padding:48px 0 40px;border-bottom:var(--border);margin-bottom:32px;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--black);color:var(--lime);border-radius:var(--r);padding:5px 12px;font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;}
+.hero h1{font-size:clamp(2.2rem,5vw,4rem);font-weight:700;letter-spacing:-.05em;line-height:.95;margin-bottom:20px;}
+.hero h1 .accent{background:var(--lime);padding:0 8px;border-radius:var(--r);display:inline-block;}
+.hero-desc{font-size:1rem;color:#444;max-width:500px;line-height:1.65;margin-bottom:28px;}
+.hero-stats{display:flex;gap:12px;flex-wrap:wrap;}
+.stat{background:var(--gray);border:var(--border);border-radius:var(--r);padding:10px 16px;text-align:center;box-shadow:var(--shadow);}
+.stat-n{font-size:1.4rem;font-weight:700;font-family:var(--mono);line-height:1;}
+.stat-l{font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gray3);margin-top:2px;}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;}
+@media(max-width:800px){.grid{grid-template-columns:1fr;}}
+
+/* PANEL */
+.panel{border:var(--border);border-radius:var(--r);overflow:hidden;background:var(--white);}
+.panel-head{background:var(--black);color:var(--white);padding:10px 16px;font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;}
+.panel-head .ph-lime{width:8px;height:8px;border-radius:50%;background:var(--lime);}
+.panel-body{padding:20px;}
+
+/* API KEY */
+.keybox{border:var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px;}
+.keybox-head{background:var(--lime);border-bottom:var(--border);padding:8px 14px;font-family:var(--mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;}
+.keybox-body{padding:14px;}
+.keyinput{width:100%;background:var(--gray);border:var(--border);border-radius:var(--r);padding:10px 12px;color:var(--black);font-family:var(--mono);font-size:.8rem;outline:none;transition:background .2s;margin-bottom:8px;}
+.keyinput:focus{background:var(--lime);}
+.keyinput.saved{background:#EFFFDB;}
+.keybtn{width:100%;background:var(--black);color:var(--white);border:var(--border);border-radius:var(--r);font-family:var(--font);font-size:.8rem;font-weight:700;padding:9px;cursor:pointer;box-shadow:var(--shadow);transition:transform .12s,box-shadow .12s;}
+.keybtn:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-lg);}
+.keyhint{font-size:.63rem;color:var(--gray3);margin-top:8px;line-height:1.5;}
+.keyhint a{color:var(--black);font-weight:700;}
+
+/* DROPZONE */
+.dropzone{position:relative;border:2px dashed var(--black);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;background:var(--gray);transition:all .2s;margin-bottom:14px;}
+.dropzone:hover,.dropzone.drag{background:var(--lime);border-style:solid;}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-icon{font-size:2rem;margin-bottom:8px;display:block;}
+.drop-title{font-size:.9rem;font-weight:700;margin-bottom:4px;}
+.drop-title span{text-decoration:underline;text-underline-offset:3px;}
+.drop-sub{font-size:.72rem;color:var(--gray3);margin-bottom:10px;}
+.drop-chips{display:flex;justify-content:center;gap:5px;flex-wrap:wrap;}
+.chip{background:var(--white);border:1.5px solid var(--black);border-radius:var(--r);padding:2px 9px;font-family:var(--mono);font-size:.63rem;font-weight:700;}
+
+/* FILE LIST */
+.flist{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.frow{display:flex;align-items:center;gap:8px;border:var(--border);border-radius:var(--r);padding:9px 12px;background:var(--gray);animation:pop .15s ease;}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.fi-icon{font-size:1.1rem;flex-shrink:0;}
+.fi-info{flex:1;min-width:0;}
+.fi-name{font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fi-size{font-size:.62rem;color:var(--gray3);font-family:var(--mono);margin-top:1px;}
+.fi-pill{font-size:.6rem;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:var(--r);flex-shrink:0;border:1.5px solid var(--black);}
+.pw{background:var(--gray2);}
+.pr{background:#E8F0FF;}
+.pd{background:#EFFFDB;}
+.pe{background:#FFE8E8;}
+.fi-rm{background:none;border:none;cursor:pointer;font-size:.85rem;padding:2px 5px;color:var(--gray3);transition:color .15s;}
+.fi-rm:hover{color:var(--red);}
+
+/* PROGRESS */
+.pgbar{height:4px;background:var(--gray2);border-radius:0;margin-bottom:14px;overflow:hidden;display:none;border-top:var(--border);}
+.pgfill{height:100%;background:var(--lime);transition:width .4s ease;}
+
+/* RUN BTN */
+.runbtn{width:100%;padding:14px;background:var(--lime);color:var(--black);border:var(--border);border-radius:var(--r);font-family:var(--font);font-size:.95rem;font-weight:700;cursor:pointer;letter-spacing:.01em;box-shadow:var(--shadow);transition:transform .12s,box-shadow .12s;}
+.runbtn:hover:not(:disabled){transform:translate(-2px,-2px);box-shadow:var(--shadow-lg);}
+.runbtn:active:not(:disabled){transform:translate(2px,2px);box-shadow:none;}
+.runbtn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+
+/* INFO PANEL */
+.info-panel{display:flex;flex-direction:column;gap:14px;}
+.info-card{border:var(--border);border-radius:var(--r);overflow:hidden;}
+.ic-head{background:var(--gray);border-bottom:var(--border);padding:8px 14px;font-family:var(--mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;}
+.ic-body{padding:14px;}
+.step{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;}
+.step:last-child{margin-bottom:0;}
+.step-n{width:22px;height:22px;flex-shrink:0;background:var(--lime);border:var(--border);border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.68rem;font-weight:700;}
+.step-t{font-size:.78rem;line-height:1.5;padding-top:2px;}
+.step-t strong{font-weight:700;}
+.data-item{display:flex;gap:8px;align-items:center;font-size:.78rem;padding:5px 0;border-bottom:1px solid var(--gray2);}
+.data-item:last-child{border-bottom:none;}
+
+/* CONSOLE */
+.console{border:var(--border);border-radius:var(--r);overflow:hidden;display:none;margin-top:14px;}
+.con-head{background:var(--black);color:var(--lime);padding:8px 14px;font-family:var(--mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;cursor:pointer;}
+.con-body{padding:10px 14px;max-height:160px;overflow-y:auto;font-family:var(--mono);font-size:.68rem;line-height:1.8;background:var(--gray);display:none;}
+.ll{display:flex;gap:7px;}
+.lt{color:var(--gray3);flex-shrink:0;}
+.li{color:var(--blue);}.lok{color:#3A7A00;}.lw{color:#8A5A00;}.le{color:var(--red);}.lm{color:#666;}
+
+/* SUMMARY */
+.sumrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-top:24px;margin-bottom:14px;}
+.sumcard{border:var(--border);border-radius:var(--r);padding:12px;text-align:center;box-shadow:var(--shadow);}
+.sn{font-size:1.7rem;font-weight:700;font-family:var(--mono);line-height:1;}
+.sl{font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gray3);margin-top:3px;}
+.sc-lime{background:var(--lime);}.sc-green{background:#D4FFAA;}.sc-red{background:#FFD4D4;}.sc-amber{background:#FFF0C0;}
+
+/* RESULT CARDS */
+.rcard{border:var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;background:var(--white);box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s;}
+.rcard:hover{transform:translate(-2px,-2px);box-shadow:var(--shadow-lg);}
+.rcard.ok .rhead{background:var(--lime);}
+.rcard.atencao .rhead{background:#FFF0C0;}
+.rcard.erro .rhead{background:#FFD4D4;}
+.rhead{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:var(--border);flex-wrap:wrap;}
+.rfname{font-family:var(--mono);font-size:.72rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.rbadges{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap;}
+.badge{font-size:.62rem;font-weight:700;font-family:var(--mono);padding:3px 9px;border-radius:var(--r);border:1.5px solid var(--black);letter-spacing:.04em;}
+.b-ok{background:var(--white);}.b-erro{background:var(--red);color:var(--white);}.b-atencao{background:var(--amber);}.b-info{background:var(--black);color:var(--white);font-size:.58rem;}
+.rbody{padding:16px;}
+.alert{border:var(--border);border-radius:var(--r);padding:10px 13px;font-size:.8rem;line-height:1.5;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start;}
+.a-ok{background:#EFFFDB;}.a-err{background:#FFE8E8;}.a-warn{background:#FFF8E0;}
+.dgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:540px){.dgrid{grid-template-columns:1fr;}}
+.dblock{background:var(--gray);border:var(--border);border-radius:var(--r);padding:11px 13px;}
+.dbt{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;padding-bottom:5px;border-bottom:1.5px solid var(--black);}
+.drow{display:flex;align-items:flex-start;gap:7px;margin-bottom:5px;font-size:.76rem;}
+.drow:last-child{margin-bottom:0;}
+.di{flex-shrink:0;font-size:.8rem;margin-top:1px;}
+.dl{color:var(--gray3);min-width:100px;flex-shrink:0;font-size:.71rem;}
+.dv{font-family:var(--mono);flex:1;word-break:break-word;line-height:1.4;font-size:.74rem;}
+.dv.ok{color:#3A7A00;font-weight:700;}.dv.fail{color:var(--red);font-weight:700;}.dv.muted{color:var(--gray3);}
+.msgbox{background:var(--black);color:var(--white);border-radius:var(--r);padding:14px 15px;margin-top:4px;}
+.msglbl{font-family:var(--mono);font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lime);margin-bottom:8px;}
+.msgtxt{font-size:.84rem;line-height:1.75;white-space:pre-wrap;color:#DDD;}
+.copybtn{margin-top:10px;background:var(--lime);color:var(--black);border:1.5px solid var(--lime);border-radius:var(--r);font-family:var(--font);font-size:.72rem;font-weight:700;padding:6px 14px;cursor:pointer;transition:all .12s;}
+.copybtn:hover{background:var(--lime2);}
+.copybtn.cp{background:var(--white);border-color:var(--white);}
+.export-btn{width:100%;padding:11px;background:var(--white);color:var(--black);border:var(--border);border-radius:var(--r);font-family:var(--font);font-size:.82rem;font-weight:600;cursor:pointer;margin-top:8px;margin-bottom:14px;box-shadow:var(--shadow);display:none;transition:transform .12s,box-shadow .12s;}
+.export-btn:hover{transform:translate(-1px,-1px);box-shadow:var(--shadow-lg);}
+footer{border-top:var(--border);padding:24px 0 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:40px;}
+.footer-brand{font-family:var(--mono);font-size:.85rem;font-weight:700;}
+.footer-brand span{background:var(--lime);padding:1px 6px;border-radius:var(--r);}
+.footer-copy{font-size:.7rem;color:var(--gray3);}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--black);border-radius:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="nav-brand">
+      <div class="nav-logo">💳</div>
+      <div class="nav-name">Pay<span>Check</span></div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-live"><div class="live-dot"></div>Online</div>
+      <div class="nav-pill">v3.0</div>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-badge">⚡ Powered by Claude AI</div>
+    <h1>Processamento<br><span class="accent">inteligente</span><br>de pagamentos</h1>
+    <p class="hero-desc">Envie os holerites em PDF e a IA extrai todos os dados — colaborador, banco, valores e total líquido. Sem digitação, sem erro.</p>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-n">4x</div><div class="stat-l">simultâneos</div></div>
+      <div class="stat"><div class="stat-n">100%</div><div class="stat-l">automático</div></div>
+      <div class="stat"><div class="stat-n">0</div><div class="stat-l">digitação</div></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div>
+      <!-- API KEY -->
+      <div class="keybox">
+        <div class="keybox-head">
+          <span>🔑 Chave de API</span>
+          <span id="keyStatus" style="font-size:.6rem;">não configurada</span>
+        </div>
+        <div class="keybox-body">
+          <input class="keyinput" type="password" id="keyInput" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false"/>
+          <button class="keybtn" id="saveKeyBtn" onclick="saveKey()">Salvar chave</button>
+          <div class="keyhint">Salva só no seu navegador. Obtenha em <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com/keys</a></div>
+        </div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="panel">
+        <div class="panel-head"><span>📂 Holerites</span><div class="ph-lime"></div></div>
+        <div class="panel-body">
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple/>
+            <span class="drop-icon">📄</span>
+            <div class="drop-title">Arraste os arquivos ou <span>clique aqui</span></div>
+            <div class="drop-sub">PDF, JPG ou PNG · até 4 arquivos</div>
+            <div class="drop-chips">
+              <span class="chip">Holerite</span>
+              <span class="chip">Folha</span>
+              <span class="chip">Contracheque</span>
+            </div>
+          </div>
+          <div class="flist" id="flist"></div>
+          <div class="pgbar" id="pgbar"><div class="pgfill" id="pgfill" style="width:0%"></div></div>
+          <button class="runbtn" id="runbtn" disabled onclick="runAll()">⚡ Processar Pagamentos</button>
+        </div>
+      </div>
+
+      <div class="console" id="console">
+        <div class="con-head" onclick="toggleCon()"><span>// console</span><span id="contog">▼</span></div>
+        <div class="con-body" id="conbody"></div>
+      </div>
+
+      <div id="sumarea"></div>
+      <button class="export-btn" id="exportBtn" onclick="exportAll()">📊 Exportar relatório .txt</button>
+      <div id="resarea"></div>
+    </div>
+
+    <!-- PAINEL DIREITO -->
+    <div class="info-panel">
+      <div class="info-card">
+        <div class="ic-head">// como funciona</div>
+        <div class="ic-body">
+          <div class="step"><div class="step-n">1</div><div class="step-t"><strong>Salve sua chave</strong> de API da Anthropic</div></div>
+          <div class="step"><div class="step-n">2</div><div class="step-t"><strong>Selecione os holerites</strong> em PDF</div></div>
+          <div class="step"><div class="step-n">3</div><div class="step-t"><strong>Clique em processar</strong> — a IA extrai tudo</div></div>
+          <div class="step"><div class="step-n">4</div><div class="step-t"><strong>Copie o resumo</strong> para o financeiro</div></div>
+        </div>
+      </div>
+      <div class="info-card">
+        <div class="ic-head">// dados extraídos</div>
+        <div class="ic-body">
+          <div class="data-item">👤 Nome e CPF do colaborador</div>
+          <div class="data-item">💼 Cargo e competência</div>
+          <div class="data-item">🏦 Banco, agência e conta</div>
+          <div class="data-item">⚡ Chave PIX (se houver)</div>
+          <div class="data-item">💵 Salário base e comissões</div>
+          <div class="data-item">➖ Descontos discriminados</div>
+          <div class="data-item">✅ Total líquido a pagar</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-brand">Pay<span>Check</span></div>
+    <div class="footer-copy">Agente de pagamento · Powered by Claude AI</div>
+  </footer>
+</div>
+
+<script>
+// ── CHAVE DE API — mesmo padrão do verificador de boletos ──────
+const PROMPT = `Você é um agente especializado em extrair dados de folhas de pagamento em PDF.
+REGRA: Nunca invente dados. Se não encontrar no documento, retorne null.
+Extraia: nome completo, CPF, cargo, banco, agência, conta, tipo de conta, chave PIX, salário base, comissões, descontos (cada um com nome e valor), total líquido, competência, data de pagamento.
+Retorne APENAS JSON válido sem markdown:
+{"colaborador":"ou null","cpf":"ou null","cargo":"ou null","banco":"ou null","agencia":"ou null","conta":"ou null","tipoConta":"ou null","chavePix":"ou null","salarioBase":"R$ X,XX ou null","comissoes":"R$ X,XX ou null","descontos":[{"nome":"","valor":""}],"totalDescontos":"ou null","totalLiquido":"R$ X,XX ou null","competencia":"ou null","dataPagamento":"ou null","parcelasDuplicadas":false,"confianca":95,"observacoes":"ou null","mensagemPagamento":"Resumo para o financeiro:\\n👤 Colaborador: [nome]\\n💼 Cargo: [cargo]\\n🏦 Banco: [banco] · Ag: [ag] · Conta: [conta]\\n💰 Valor líquido: [total]\\n📅 Competência: [período]\\n📋 Descontos: [lista ou Nenhum]"}`;
+
+let files = [], results = [], conOpen = false;
+
+// Mesmo padrão exato do verificador de boletos
+let apiKey = localStorage.getItem('paycheck_v3_key') || '';
+const $ = id => document.getElementById(id);
+
+if (apiKey) {
+  $('keyInput').value = apiKey;
+  $('keyInput').classList.add('saved');
+  $('keyStatus').textContent = '✓ configurada';
+  $('keyStatus').style.color = '#3A7A00';
+}
+
+function saveKey() {
+  const k = $('keyInput').value.trim();
+  if (!k.startsWith('sk-ant-')) {
+    $('keyInput').style.outline = '2px solid var(--red)';
+    setTimeout(() => $('keyInput').style.outline = '', 1500);
+    return;
+  }
+  localStorage.setItem('paycheck_v3_key', k);
+  apiKey = k;
+  $('keyInput').classList.add('saved');
+  $('keyStatus').textContent = '✓ configurada';
+  $('keyStatus').style.color = '#3A7A00';
+  $('saveKeyBtn').textContent = '✓ Salvo!';
+  setTimeout(() => $('saveKeyBtn').textContent = 'Salvar chave', 2000);
+}
+$('keyInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
+
+function log(msg, t = 'm') {
+  const ts = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  $('console').style.display = 'block';
+  $('conbody').insertAdjacentHTML('beforeend',
+    `<div class="ll"><span class="lt">[${ts}]</span><span class="l${t}">${String(msg).replace(/</g,'&lt;')}</span></div>`);
+  if (conOpen) $('conbody').scrollTop = $('conbody').scrollHeight;
+}
+function toggleCon() {
+  conOpen = !conOpen;
+  $('conbody').style.display = conOpen ? 'block' : 'none';
+  $('contog').textContent = conOpen ? '▲' : '▼';
+  if (conOpen) $('conbody').scrollTop = $('conbody').scrollHeight;
+}
+
+function parseJSON(raw) {
+  if (!raw) return null;
+  try { return JSON.parse(raw.replace(/```json\n?|```/g, '').trim()); } catch(_) {}
+  try { const m = raw.match(/\{[\s\S]*\}/); if (m) return JSON.parse(m[0]); } catch(_) {}
+  return null;
+}
+
+// Drag & Drop — igual ao verificador
+const dz = $('dropzone'), fi = $('fileInput');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  addFiles(Array.from(e.dataTransfer.files).filter(f => isOk(f)));
+});
+fi.addEventListener('change', () => { addFiles(Array.from(fi.files)); fi.value = ''; });
+
+function isOk(f) {
+  return ['application/pdf','image/jpeg','image/png','image/webp'].includes(f.type)
+    || /\.(pdf|jpg|jpeg|png|webp)$/i.test(f.name);
+}
+
+function addFiles(nf) {
+  nf.slice(0, 4 - files.length).forEach(f => {
+    if (!files.find(x => x.name === f.name))
+      files.push({file:f, name:f.name, size:f.size, status:'w'});
+  });
+  renderFiles();
+  $('runbtn').disabled = files.length === 0;
+}
+function removeFile(i) {
+  files.splice(i, 1); renderFiles();
+  $('runbtn').disabled = files.length === 0;
+  if (!files.length) { $('sumarea').innerHTML=''; $('resarea').innerHTML=''; results=[]; $('exportBtn').style.display='none'; }
+}
+function renderFiles() {
+  const S = {w:['pw','WAIT'], r:['pr','PROC'], d:['pd','DONE'], e:['pe','ERR']};
+  $('flist').innerHTML = files.map((f,i) => {
+    const [c,l] = S[f.status] || S.w;
+    return `<div class="frow"><span class="fi-icon">📄</span><div class="fi-info"><div class="fi-name">${esc(f.name)}</div><div class="fi-size">${(f.size/1024).toFixed(1)}KB</div></div><span class="fi-pill ${c}">${l}</span><button class="fi-rm" onclick="removeFile(${i})">✕</button></div>`;
+  }).join('');
+}
+function setSt(i,s) { files[i].status=s; renderFiles(); }
+function setPg(c,t) { $('pgfill').style.width = Math.round(c/t*100)+'%'; }
+
+// toBase64 — igual ao verificador
+async function toBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function getMime(file) {
+  if (file.type && file.type !== 'application/octet-stream') return file.type;
+  const ext = file.name.split('.').pop().toLowerCase();
+  return {pdf:'application/pdf',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp'}[ext] || 'application/pdf';
+}
+
+// callClaude — EXATAMENTE igual ao verificador de boletos
+async function callClaude(file) {
+  const b64 = await toBase64(file);
+  const mime = getMime(file);
+  const isPdf = mime === 'application/pdf';
+
+  const fileContent = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } }
+    : { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } };
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: [fileContent, { type: 'text', text: PROMPT }] }]
+    })
+  });
+
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.type + ': ' + data.error.message);
+  const raw = (data.content || []).map(c => c.text || '').join('');
+  log('Resposta (' + raw.length + 'c): ' + raw.slice(0,60) + '…');
+  const parsed = parseJSON(raw);
+  if (!parsed) throw new Error('JSON inválido: ' + raw.slice(0,150));
+  return parsed;
+}
+
+// Loop principal — igual ao verificador
+async function runAll() {
+  if (!apiKey) {
+    $('keyInput').focus();
+    $('keyInput').style.outline = '2px solid var(--red)';
+    setTimeout(() => $('keyInput').style.outline = '', 2000);
+    return;
+  }
+  $('runbtn').disabled = true; $('runbtn').textContent = '⏳ Processando...';
+  $('resarea').innerHTML = ''; $('sumarea').innerHTML = ''; results = [];
+  $('console').style.display = 'block'; $('conbody').innerHTML = '';
+  $('pgbar').style.display = 'block'; setPg(0, files.length);
+  $('exportBtn').style.display = 'none';
+  log('Iniciando — ' + files.length + ' arquivo(s)', 'i');
+
+  for (let i = 0; i < files.length; i++) {
+    log('─── [' + (i+1) + '/' + files.length + '] ' + files[i].name, 'i');
+    setSt(i, 'r'); setPg(i, files.length);
+    let parsed = null;
+    try {
+      parsed = await callClaude(files[i].file);
+      log('OK — ' + (parsed.colaborador||'?') + ' · ' + (parsed.totalLiquido||'?'), 'ok');
+    } catch(e) {
+      log('ERRO: ' + e.message, 'e');
+      if (e.message.includes('401') || e.message.includes('authentication_error')) {
+        log('Chave inválida. Insira uma nova.', 'e');
+        localStorage.removeItem('paycheck_v3_key'); apiKey = '';
+        $('keyInput').classList.remove('saved'); $('keyInput').value = '';
+        $('keyStatus').textContent = 'não configurada'; $('keyStatus').style.color = '';
+      }
+    }
+    setSt(i, parsed ? 'd' : 'e');
+    setPg(i+1, files.length);
+    results.push({filename: files[i].name, result: parsed});
+    renderResult(parsed, files[i].name, i);
+  }
+
+  renderSummary();
+  setTimeout(() => { $('pgbar').style.display = 'none'; }, 600);
+  $('runbtn').disabled = false; $('runbtn').textContent = '⚡ Processar Pagamentos';
+  if (results.filter(r => r.result).length > 0) $('exportBtn').style.display = 'block';
+  log('Concluído ✓', 'ok');
+}
+
+function renderResult(p, fname, idx) {
+  if (!p) {
+    $('resarea').insertAdjacentHTML('beforeend',
+      `<div class="rcard erro"><div class="rhead"><span class="rfname">📄 ${esc(fname)}</span><div class="rbadges"><span class="badge b-erro">✗ ERRO</span></div></div><div class="rbody"><div class="alert a-err"><span>⚠️</span><span>Não foi possível processar. Veja o console.</span></div></div></div>`);
+    return;
+  }
+  const hasDup = p.parcelasDuplicadas === true;
+  const ok = !hasDup && p.totalLiquido && p.colaborador;
+  const st = ok ? 'ok' : hasDup ? 'erro' : 'atencao';
+  const alertHtml = ok
+    ? `<div class="alert a-ok"><span>✅</span><span>Dados extraídos com sucesso.</span></div>`
+    : hasDup
+    ? `<div class="alert a-err"><span>⚠️</span><span><b>Parcelas duplicadas!</b> Verifique antes de pagar.</span></div>`
+    : `<div class="alert a-warn"><span>⚠️</span><span>Campos incompletos. Verifique manualmente.</span></div>`;
+  const descontosHtml = (p.descontos||[]).map(d =>
+    `<div class="drow"><span class="di">➖</span><span class="dl">${esc(d.nome||'Desconto')}</span><span class="dv fail">${esc(d.valor||'—')}</span></div>`
+  ).join('');
+
+  $('resarea').insertAdjacentHTML('beforeend', `
+  <div class="rcard ${st}">
+    <div class="rhead">
+      <span class="rfname">📄 ${esc(fname)}</span>
+      <div class="rbadges">
+        ${hasDup ? '<span class="badge b-erro">⚠ DUPLICATA</span>' : ''}
+        ${p.competencia ? `<span class="badge b-info">${esc(p.competencia)}</span>` : ''}
+        <span class="badge b-${st === 'ok' ? 'ok' : st === 'erro' ? 'erro' : 'atencao'}">${st === 'ok' ? '✓ OK' : st === 'erro' ? '✗ ERRO' : '⚠ ATENÇÃO'}</span>
+      </div>
+    </div>
+    <div class="rbody">
+      ${alertHtml}
+      <div class="dgrid">
+        <div class="dblock">
+          <div class="dbt">👤 colaborador</div>
+          <div class="drow"><span class="di">👤</span><span class="dl">Nome</span><span class="dv">${esc(p.colaborador||'—')}</span></div>
+          <div class="drow"><span class="di">🪪</span><span class="dl">CPF</span><span class="dv muted">${esc(p.cpf||'—')}</span></div>
+          <div class="drow"><span class="di">💼</span><span class="dl">Cargo</span><span class="dv">${esc(p.cargo||'—')}</span></div>
+          <div class="drow"><span class="di">📅</span><span class="dl">Competência</span><span class="dv">${esc(p.competencia||'—')}</span></div>
+        </div>
+        <div class="dblock">
+          <div class="dbt">🏦 banco</div>
+          <div class="drow"><span class="di">🏦</span><span class="dl">Banco</span><span class="dv">${esc(p.banco||'—')}</span></div>
+          <div class="drow"><span class="di">🏢</span><span class="dl">Agência</span><span class="dv">${esc(p.agencia||'—')}</span></div>
+          <div class="drow"><span class="di">💳</span><span class="dl">Conta</span><span class="dv">${esc(p.conta||'—')} ${esc(p.tipoConta ? '('+p.tipoConta+')' : '')}</span></div>
+          ${p.chavePix ? `<div class="drow"><span class="di">⚡</span><span class="dl">PIX</span><span class="dv muted">${esc(p.chavePix)}</span></div>` : ''}
+        </div>
+        <div class="dblock">
+          <div class="dbt">💰 valores</div>
+          <div class="drow"><span class="di">💵</span><span class="dl">Salário base</span><span class="dv">${esc(p.salarioBase||'—')}</span></div>
+          ${p.comissoes ? `<div class="drow"><span class="di">🏆</span><span class="dl">Comissões</span><span class="dv ok">${esc(p.comissoes)}</span></div>` : ''}
+          ${p.totalDescontos ? `<div class="drow"><span class="di">➖</span><span class="dl">Descontos</span><span class="dv fail">${esc(p.totalDescontos)}</span></div>` : ''}
+          <div class="drow"><span class="di">✅</span><span class="dl">Total líquido</span><span class="dv ok" style="font-weight:700;font-size:.82rem">${esc(p.totalLiquido||'—')}</span></div>
+        </div>
+        ${descontosHtml ? `<div class="dblock"><div class="dbt">➖ descontos</div>${descontosHtml}</div>` : ''}
+      </div>
+      ${p.observacoes ? `<div style="font-size:.73rem;border:1.5px solid var(--amber);background:#FFF8E0;padding:8px 11px;border-radius:var(--r);margin-bottom:10px;">ℹ️ ${esc(p.observacoes)}</div>` : ''}
+      <div class="msgbox">
+        <div class="msglbl">// resumo financeiro</div>
+        <div class="msgtxt" id="msg_${idx}">${esc(p.mensagemPagamento||'')}</div>
+        <button class="copybtn" id="cpbtn_${idx}" onclick="copyMsg(${idx})">📋 Copiar resumo</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+function renderSummary() {
+  if (!results.length) return;
+  const ok = results.filter(r => r.result?.totalLiquido).length;
+  const err = results.filter(r => !r.result || r.result.parcelasDuplicadas).length;
+  const warn = results.length - ok - err;
+  const total = results.filter(r => r.result?.totalLiquido).reduce((acc,r) => {
+    const v = r.result.totalLiquido?.replace(/[^0-9,]/g,'').replace(',','.');
+    return acc + (parseFloat(v)||0);
+  }, 0);
+  $('sumarea').innerHTML = `<div class="sumrow">
+    <div class="sumcard sc-lime"><div class="sn">${results.length}</div><div class="sl">total</div></div>
+    <div class="sumcard sc-green"><div class="sn">${ok}</div><div class="sl">prontos</div></div>
+    ${err ? `<div class="sumcard sc-red"><div class="sn">${err}</div><div class="sl">atenção</div></div>` : ''}
+    ${total > 0 ? `<div class="sumcard sc-lime"><div class="sn" style="font-size:1.1rem">R$${total.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="sl">total folha</div></div>` : ''}
+  </div>`;
+}
+
+function exportAll() {
+  const linhas = ['RELATÓRIO DE PAGAMENTO — PAYCHECK','='.repeat(50),''];
+  results.forEach((r,i) => {
+    if (!r.result) return;
+    const p = r.result;
+    linhas.push(`[${i+1}] ${p.colaborador||'—'}`);
+    linhas.push(`Cargo: ${p.cargo||'—'} | Competência: ${p.competencia||'—'}`);
+    linhas.push(`Banco: ${p.banco||'—'} | Ag: ${p.agencia||'—'} | Conta: ${p.conta||'—'}`);
+    if (p.chavePix) linhas.push(`PIX: ${p.chavePix}`);
+    linhas.push(`Total líquido: ${p.totalLiquido||'—'}`);
+    if (p.parcelasDuplicadas) linhas.push('⚠️ PARCELAS DUPLICADAS');
+    linhas.push('-'.repeat(40));
+  });
+  const blob = new Blob([linhas.join('\n')], {type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `paycheck_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.txt`;
+  a.click();
+}
+
+function copyMsg(idx) {
+  const el = document.getElementById('msg_'+idx), bt = document.getElementById('cpbtn_'+idx);
+  const tmp = document.createElement('textarea'); tmp.innerHTML = el.innerHTML;
+  navigator.clipboard.writeText(tmp.value).then(() => {
+    bt.textContent = '✓ Copiado!'; bt.classList.add('cp');
+    setTimeout(() => { bt.textContent = '📋 Copiar resumo'; bt.classList.remove('cp'); }, 2500);
+  });
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
